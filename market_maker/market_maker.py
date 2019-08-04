@@ -104,13 +104,14 @@ class ExchangeInterface:
                 "futureType": future_type,
                 "multiplier": multiplier,
                 "markPrice": float(instrument['markPrice']),  # markPrice:标记价格
-                "spot": float(instrument['indicativeSettlePrice'])
+                "spot": float(instrument['indicativeSettlePrice'])  # indicativeSettlePrice：预计结算价格
             }
 
         return portfolio
 
     def calc_delta(self):
         """Calculate currency delta for portfolio"""
+        '''计算投资组合的货币增量'''
         portfolio = self.get_portfolio()
         spot_delta = 0
         mark_delta = 0
@@ -276,8 +277,8 @@ class ExchangeInterface:
     # 'state': '',
     # 'riskLimit': 1000000000000,   // 风险限额，单位聪
     # 'availableMargin': 53852623, // 可用余额，单位聪
-    # 'initMargin': 0,
-    # 'grossMarkValue': 39975000, // 总仓位价值 ，单位聪
+    # 'initMargin': 0,             // 委托保证金 单位聪
+    # 'grossMarkValue': 39975000,  // 总仓位价值 ，单位聪
     # 'grossOpenCost': 0,
     # 'excessMarginPcnt': 1,
     # 'amount': 67226467,
@@ -374,7 +375,7 @@ class ExchangeInterface:
 
     # 'execBuyQty': 6590,
     # 'markPrice': 7539.68,               // 标记价格
-    # 'unrealisedPnlPcnt': -0.0009,
+    # 'unrealisedPnlPcnt': -0.0009,       // 回报率
     # 'posComm': 73530,
     # 'execQty': 5678,
     # 'currentCost': -75219570,
@@ -415,7 +416,7 @@ class ExchangeInterface:
     # 'commission': 0.00075,
     # 'quoteCurrency': 'USD',
     # 'lastValue': -75307314,
-    # 'symbol': 'XBTUSD', // 合约类型
+    # 'symbol': 'XBTUSD',                // 合约类型
     # 'indicativeTax': 0,
     # 'openingCost': 0,
     # 'openOrderSellQty': 0,
@@ -426,7 +427,7 @@ class ExchangeInterface:
     # 'posCost': -75239178,
     # 'bankruptPrice': 5792,            // 破产价格(todo)
     # 'execComm': 74560,
-    # 'realisedPnl': -94168,
+    # 'realisedPnl': -94168,           // 已实现盈亏 单位聪
     # 'underlying': 'XBT',             // 标的资产
     # 'posCost2': -75239178,
     # 'posCross': 0,
@@ -441,7 +442,7 @@ class ExchangeInterface:
     # 'avgCostPrice': 7546.5,         // 开仓价格
     # 'execCost': -75219570,
     # 'isOpen': True,
-    # 'maintMargin': 22805145,
+    # 'maintMargin': 22805145,        // 保证金 单位聪  解释：这个仓位目前需要的保证金
     # 'unrealisedPnl': -68136,
     # 'leverage': 3.3,               // 杠杆
     # 'realisedTax': 0,
@@ -449,7 +450,7 @@ class ExchangeInterface:
     # 'grossExecCost': 75234857,
     # 'simpleCost': 5678,
     # 'posState': '',
-    # 'prevRealisedPnl': -13633,
+    # 'prevRealisedPnl': -13633,    // 上一个已平仓位的盈亏
     # 'riskLimit': 20000000000,     // 风险限额，单位聪
     # 'lastPrice': 7539.68,         // 最新价格 = 标记价格
     # 'prevClosePrice': 7537.71,
@@ -566,12 +567,14 @@ class OrderManager:
         logger.info("Current Contract Position: %d" % self.running_qty)  # 目前仓位数量
         if settings.CHECK_POSITION_LIMITS:  # 仓位数量限制
             logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
+
         # 仓位情况
         if position['currentQty'] != 0:
-            logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
-            logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
-        logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+            logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))    # 开仓价格
+            logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))  # 开仓价格
+
+        logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))  # 机器人运行以来已经买入多少(美元)
+        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])    # 总合约增量
 
     def get_ticker(self):
         '''返回策略的开仓价格，最高买价，最低卖价'''

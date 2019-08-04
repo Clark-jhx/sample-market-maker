@@ -15,12 +15,17 @@ setup(name='bitmex-market-maker', # 应用名称
       url='https://github.com/BitMEX/sample-market-maker', # 项目主页
       long_description=open(join(here, 'README.md')).read(),
       long_description_content_type='text/markdown',
-      author='Samuel Reed',
-      author_email='sam@bitmex.com',
-      install_requires=[
+      author='clark',
+      author_email='996719704@qq.com',
+      install_requires=[ # 自动安装所需依赖
           'requests',
           'websocket-client',
-          'future'
+          'future',
+          'appdirs==1.4.3',
+          'backports.ssl-match-hostname==3.5.0.1',
+          'packaging==16.8',
+          'pyparsing==2.2.0',
+          'six==1.10.0'
       ],
       packages=['market_maker', 'market_maker.auth', 'market_maker.utils', 'market_maker.ws'],  # 应用源代码
       entry_points={
@@ -28,4 +33,4 @@ setup(name='bitmex-market-maker', # 应用名称
       }
       )
 
-# 改文件用户打包
+# 该文件用于打包

@@ -1,6 +1,0 @@
-#!/usr/bin/env python
-
-# 这个不是入口
-from market_maker import market_maker
-market_maker.run()
-

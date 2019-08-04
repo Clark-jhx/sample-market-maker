@@ -1,19 +1,71 @@
 from os.path import join
 import logging
 
+# 合约类型
+SYMBOL = "XBTUSD"
+# 对手合约
+SYMBOL_x = "XBTZ19"
+
+# 指定你持有的合同，这些将在投资组合计算中使用。
+CONTRACTS = [SYMBOL, SYMBOL_x]
+
+# 每个机器人，这个标记要不行同，不然会互相影响订单
+ORDERID_PREFIX = "mm_a_"
+
+# 订单成交的百分比，阈值
+limit = 0.1  # 10%
+
+# 每一单数量(美元)
+ORDER_START_SIZE = 20
+
+# 订单对
+ORDER_PAIRS = 5
+
+# 连续订单之间的间隔(美元)
+INTERVAL = 5
+
+# 修改订单时使用，INTERVAL * 2
+# RELIST_INTERVAL = INTERVAL * 2
+
+
+# 网址
+BASE_URL = "https://testnet.bitmex.com/api/v1/"  # 测试地址
+# BASE_URL = "https://www.bitmex.com/api/v1/" # Once you're ready, uncomment this.
+
+# 测试
+API_KEY = "8niYvr0Xcxq-HqfFEiGBsISd"
+API_SECRET = "3oJVgWKHVSJhmgWb4PHk7Fqgt_CoyievVsRmv1I0tugzXUgN"
+
+# 实盘
+# API_KEY = ""
+# API_SECRET = ""
+
+# 定时器间隔 单位秒
+# 间隔多长时间重新下单
+TIMER_INTERVAL = 60 * 5
+
+# 主循环时间间隔，单位秒
+LOOP_INTERVAL = 5
+
+# log信息打印时间，单位秒，1分钟
+LOG_INTERVAL = 12  # LOOP_INTERVAL * 12
+
+
+
 ########################################################################################################################
 # Connection/Auth
 # 连接/授权
 ########################################################################################################################
 
+# api地址
 # API URL.
-BASE_URL = "https://testnet.bitmex.com/api/v1/" # 测试地址
+# BASE_URL = "https://testnet.bitmex.com/api/v1/"  # 测试地址
 # BASE_URL = "https://www.bitmex.com/api/v1/" # Once you're ready, uncomment this.
 
-# The BitMEX API requires permanent API keys. Go to https://testnet.bitmex.com/app/apiKeys to fill these out.
-API_KEY = ""
-API_SECRET = ""
-
+# 永久api key
+# The BitMEX API requires permanent API keys. Go to https://testnet.bitmex.com/api/apiKeys to fill these out.
+# API_KEY = ""
+# API_SECRET = ""
 
 ########################################################################################################################
 # Target
@@ -21,8 +73,7 @@ API_SECRET = ""
 ########################################################################################################################
 
 # Instrument to market make on BitMEX.
-SYMBOL = "XBTUSD"
-
+# SYMBOL = "XBTUSD"
 
 ########################################################################################################################
 # Order Size & Spread
@@ -32,18 +83,18 @@ SYMBOL = "XBTUSD"
 # How many pairs of buy/sell orders to keep open
 # 挂所多少对 买/卖 单
 # 6个买，6个卖
-ORDER_PAIRS = 6
+# ORDER_PAIRS = 6
 
 # ORDER_START_SIZE will be the number of contracts submitted on level 1
 # Number of contracts from level 1 to ORDER_PAIRS - 1 will follow the function
 # [ORDER_START_SIZE + ORDER_STEP_SIZE (Level -1)]
-ORDER_START_SIZE = 100
+# ORDER_START_SIZE = 100
 ORDER_STEP_SIZE = 100
 
 # Distance between successive orders, as a percentage (example: 0.005 for 0.5%)
 # 连续订单之间的间距，百分比
 # 订单之间的差价
-INTERVAL = 0.005
+# INTERVAL = 0.005
 
 # Minimum spread to maintain, in percent, between asks & bids
 # 最小差价
@@ -65,7 +116,7 @@ MAINTAIN_SPREADS = True
 #
 # 修改订单时会用到
 # 0.01 == 1%
-RELIST_INTERVAL = 0.01
+# RELIST_INTERVAL = 0.01
 
 
 ########################################################################################################################
@@ -100,8 +151,8 @@ DRY_RUN = False
 # Generally, it's safe to make this short because we're fetching from websockets. But if too many
 # order amend/replaces are done, you may hit a ratelimit. If so, email BitMEX if you feel you need a higher limit.
 # 如果太多订单要修改/替换，可能会激活速率限制，向bitmex发邮件
-# 主循环时间价格，单位秒
-LOOP_INTERVAL = 5
+# 主循环时间间隔，单位秒
+# LOOP_INTERVAL = 5
 
 # Wait times between orders / errors
 # 出现错误等待时间
@@ -126,12 +177,11 @@ LOG_LEVEL = logging.INFO
 # cancel each others' orders.
 # 如果运行多个机器人，并且这个标记相同，那个机器人之间或相互影响订单
 # Max length is 13 characters.
-ORDERID_PREFIX = "mm_bitmex_"
+# ORDERID_PREFIX = "mm_bitmex_"
 
 # If any of these files (and this file) changes, reload the bot.
 # 如下文件(和此文件)发生改变，会reload机器人
 WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', 'bitmex.py'), 'settings.py']
-
 
 ########################################################################################################################
 # BitMEX Portfolio
@@ -139,4 +189,4 @@ WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', '
 
 # Specify the contracts that you hold. These will be used in portfolio calculations.
 # 指定你持有的合同，这些将在投资组合计算中使用。
-CONTRACTS = ['XBTUSD']
+# CONTRACTS = ['XBTUSD']
