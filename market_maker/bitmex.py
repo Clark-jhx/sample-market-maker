@@ -45,7 +45,7 @@ class BitMEX(object):
 
         # Create websocket for streaming data
         # 创建websocket
-        self.ws = BitMEXWebsocket()
+        self.ws = BitMEXWebsocket(apiKey=apiKey, apiSecret=apiSecret)
         self.ws.connect(base_url, symbol, shouldAuth=shouldWSAuth)
 
         self.timeout = timeout

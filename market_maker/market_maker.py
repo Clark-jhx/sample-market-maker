@@ -25,7 +25,7 @@ logger = log.setup_custom_logger('root')
 
 # 交易接口
 class ExchangeInterface:
-    def __init__(self, dry_run=False):
+    def __init__(self, dry_run=False, apiKey=None, apiSecret=None):
         self.dry_run = dry_run
         # 命令行中读取合约类型，没有的话，使用默认的
         if len(sys.argv) > 1:
@@ -35,7 +35,7 @@ class ExchangeInterface:
 
         # api接口
         self.bitmex = bitmex.BitMEX(base_url=settings.BASE_URL, symbol=self.symbol,
-                                    apiKey=settings.API_KEY, apiSecret=settings.API_SECRET,
+                                    apiKey=apiKey, apiSecret=apiSecret,
                                     orderIDPrefix=settings.ORDERID_PREFIX, postOnly=settings.POST_ONLY,
                                     timeout=settings.TIMEOUT)
 
@@ -522,9 +522,9 @@ class ExchangeInterface:
 
 
 class OrderManager:
-    def __init__(self):
+    def __init__(self, apiKey=None, apiSecret=None):
         # 交易所接口
-        self.exchange = ExchangeInterface(settings.DRY_RUN)
+        self.exchange = ExchangeInterface(settings.DRY_RUN, apiKey=apiKey, apiSecret=apiSecret)
         # Once exchange is created, register exit handler that will always cancel orders
         # on any error.
         # 注册系统退出(发生错误时)回调，会取消订单
@@ -802,11 +802,9 @@ class OrderManager:
 
         # Get ticker, which sets price offsets and prints some debugging info.
         # 获取市场最新卖/买价格、策略的买/卖价格
-        # 获取市场最新中间价格
         ticker = self.get_ticker()
 
         # Sanity check:
-        # 最高买单价格>市场卖价 or 最低卖单<市场买价
         if self.get_price_offset(-1) >= ticker["sell"] or self.get_price_offset(1) <= ticker["buy"]:
             logger.error("Buy: %s, Sell: %s" % (self.start_position_buy, self.start_position_sell))
             logger.error("First buy position: %s\nBitMEX Best Ask: %s\nFirst sell position: %s\nBitMEX Best Bid: %s" %
@@ -815,13 +813,11 @@ class OrderManager:
             self.exit()
 
         # Messaging if the position limits are reached
-        # 仓位限制
         if self.long_position_limit_exceeded():
             logger.info("Long delta limit exceeded")
             logger.info("Current Position: %.f, Maximum Position: %.f" %
                         (self.exchange.get_delta(), settings.MAX_POSITION))
 
-        # 仓位限制
         if self.short_position_limit_exceeded():
             logger.info("Short delta limit exceeded")
             logger.info("Current Position: %.f, Minimum Position: %.f" %
@@ -880,6 +876,34 @@ class OrderManager:
         logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
+class MulOrderManager:
+    def __init__(self, key_secrets=None):
+        self.key_secrets = key_secrets
+        self.order_managers = []
+        for key_secret in key_secrets:
+            order_manager = OrderManager(apiKey=key_secret['apiKey'], apiSecret=key_secret['apiSecret'])
+            self.order_managers.append(order_manager)
+        pass
+
+    def run_loop(self):
+        while True:
+            sys.stdout.write("-----\n")
+            sys.stdout.flush()
+            
+            sleep(settings.LOOP_INTERVAL)
+            for order_manager in self.order_managers:
+                # 检查文件改变，重启
+                order_manager.check_file_change()
+                # This will restart on very short downtime, but if it's longer,
+                # the MM will crash entirely as it is unable to connect to the WS on boot.
+                # 如果ws断开连接，重连
+                if not order_manager.check_connection():
+                    logger.error("Realtime data connection unexpectedly closed, restarting.")
+                    order_manager.restart()
+
+                    order_manager.sanity_check()  # Ensures health of mm - several cut-out points here
+                    order_manager.print_status()  # Print skew, delta, etc
+                    order_manager.place_orders()  # Creates desired orders and converges to existing orders
 
 #
 # Helpers
@@ -904,9 +928,11 @@ def margin(instrument, quantity, price):
 def run():
     logger.info('BitMEX Market Maker Version: %s\n' % constants.VERSION)  # 信息：软件版本
 
-    om = OrderManager()
+    # 读取密钥配置，list类型
+    key_secrets = settings.API_SECRETS
+    mom = MulOrderManager(key_secrets=key_secrets)
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
     try:
-        om.run_loop()
+        mom.run_loop()
     except (KeyboardInterrupt, SystemExit):
         sys.exit()

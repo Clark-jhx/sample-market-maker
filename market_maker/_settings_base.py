@@ -14,6 +14,16 @@ BASE_URL = "https://testnet.bitmex.com/api/v1/" # 测试地址
 API_KEY = ""
 API_SECRET = ""
 
+API_SECRETS = [
+    {
+        'apiKey': '8niYvr0Xcxq-HqfFEiGBsISd',
+        'apiSecret': '3oJVgWKHVSJhmgWb4PHk7Fqgt_CoyievVsRmv1I0tugzXUgN'
+    },
+    {
+        'apiKey': 'whf-uOhZIbJNVA6eWMfe96XW',
+        'apiSecret': 'OybtAXR7ImW5W8bbpv5wyENqMdl5TjPXmFlmXZ-NQr6bAARw'
+    }
+]
 
 ########################################################################################################################
 # Target
