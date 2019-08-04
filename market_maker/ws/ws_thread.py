@@ -42,10 +42,12 @@ class BitMEXWebsocket():
 
         self.logger.debug("Connecting WebSocket.")
         self.symbol = symbol
-        self.shouldAuth = shouldAuth
+        self.shouldAuth = shouldAuth  # 是否需要认证，模式是true
 
         # We can subscribe right in the connection querystring, so let's build that.
         # Subscribe to all pertinent endpoints
+        # 好像是指定要订阅的内容，如下
+        # quote:XBT7D,trade:XBT7D,instrument,order:XBT7D,execution:XBT7D,margin,position
         subscriptions = [sub + ':' + symbol for sub in ["quote", "trade"]]
         subscriptions += ["instrument"]  # We want all of them
         if self.shouldAuth:
@@ -53,15 +55,18 @@ class BitMEXWebsocket():
             subscriptions += ["margin", "position"]
 
         # Get WS URL and connect.
+        # 构建ws的url
         urlParts = list(urlparse(endpoint))
         urlParts[0] = urlParts[0].replace('http', 'ws')
         urlParts[2] = "/realtime?subscribe=" + ",".join(subscriptions)
         wsURL = urlunparse(urlParts)
         self.logger.info("Connecting to %s" % wsURL)
+        # 连接ws
         self.__connect(wsURL)
         self.logger.info('Connected to WS. Waiting for data images, this may take a moment...')
 
         # Connected. Wait for partials
+        # 连接已经成功，等待数据
         self.__wait_for_symbol(symbol)
         if self.shouldAuth:
             self.__wait_for_account()
@@ -72,7 +77,7 @@ class BitMEXWebsocket():
     #
     def get_instrument(self, symbol):
         instruments = self.data['instrument']
-        matchingInstruments = [i for i in instruments if i['symbol'] == symbol]
+        matchingInstruments = [i for i in instruments if i['symbol'] == symbol]  # 表推导，返回一张表
         if len(matchingInstruments) == 0:
             raise Exception("Unable to find instrument or index with symbol: " + symbol)
         instrument = matchingInstruments[0]
@@ -104,6 +109,7 @@ class BitMEXWebsocket():
         # The instrument has a tickSize. Use it to round values.
         return {k: toNearest(float(v or 0), instrument['tickSize']) for k, v in iteritems(ticker)}
 
+    # 保证金
     def funds(self):
         return self.data['margin'][0]
 
@@ -111,14 +117,16 @@ class BitMEXWebsocket():
         raise NotImplementedError('orderBook is not subscribed; use askPrice and bidPrice on instrument')
         # return self.data['orderBook25'][0]
 
+    # 获取已存在订单
     def open_orders(self, clOrdIDPrefix):
         orders = self.data['order']
         # Filter to only open orders (leavesQty > 0) and those that we actually placed
         return [o for o in orders if str(o['clOrdID']).startswith(clOrdIDPrefix) and o['leavesQty'] > 0]
 
+    # 获取 持有仓位
     def position(self, symbol):
         positions = self.data['position']
-        pos = [p for p in positions if p['symbol'] == symbol]
+        pos = [p for p in positions if p['symbol'] == symbol]  # 表推导，生产一张表
         if len(pos) == 0:
             # No position found; stub it
             return {'avgCostPrice': 0, 'avgEntryPrice': 0, 'currentQty': 0, 'symbol': symbol}
@@ -141,6 +149,7 @@ class BitMEXWebsocket():
 
     #
     # Private methods
+    # 连接ws
     #
 
     def __connect(self, wsURL):
@@ -149,6 +158,7 @@ class BitMEXWebsocket():
 
         ssl_defaults = ssl.get_default_verify_paths()
         sslopt_ca_certs = {'ca_certs': ssl_defaults.cafile}
+        # 三方库 连接ws
         self.ws = websocket.WebSocketApp(wsURL,
                                          on_message=self.__on_message,
                                          on_close=self.__on_close,
@@ -158,22 +168,27 @@ class BitMEXWebsocket():
                                          )
 
         setup_custom_logger('websocket', log_level=settings.LOG_LEVEL)
-        self.wst = threading.Thread(target=lambda: self.ws.run_forever(sslopt=sslopt_ca_certs))
+        # 创建线程
+        self.wst = threading.Thread(target=lambda: self.ws.run_forever(sslopt=sslopt_ca_certs))  # target指定线程要执行的方法
         self.wst.daemon = True
+        # 启动线程
         self.wst.start()
         self.logger.info("Started thread")
 
         # Wait for connect before continuing
+        # 等5秒，让ws进行连接
         conn_timeout = 5
         while (not self.ws.sock or not self.ws.sock.connected) and conn_timeout and not self._error:
             sleep(1)
             conn_timeout -= 1
 
+        # 超过5秒，ws没连上
         if not conn_timeout or self._error:
             self.logger.error("Couldn't connect to WS! Exiting.")
             self.exit()
             sys.exit(1)
 
+    # 构建ws连接header
     def __get_auth(self):
         '''Return auth headers. Will use API Keys if present in settings.'''
 
@@ -186,7 +201,7 @@ class BitMEXWebsocket():
         nonce = generate_expires()
         return [
             "api-expires: " + str(nonce),
-            "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''),
+            "api-signature: " + generate_signature(settings.API_SECRET, 'GET', '/realtime', nonce, ''), # 构建api签名
             "api-key:" + settings.API_KEY
         ]
 
@@ -205,6 +220,7 @@ class BitMEXWebsocket():
         '''Send a raw command.'''
         self.ws.send(json.dumps({"op": command, "args": args or []}))
 
+    # ws接收到数据
     def __on_message(self, message):
         '''Handler for parsing WS messages.'''
         message = json.loads(message)
@@ -289,13 +305,16 @@ class BitMEXWebsocket():
         except:
             self.logger.error(traceback.format_exc())
 
+    # 连接成功调用
     def __on_open(self):
         self.logger.debug("Websocket Opened.")
 
+    # 连接关闭调用
     def __on_close(self):
         self.logger.info('Websocket Closed')
         self.exit()
-
+    
+    # 连接有错误时调用
     def __on_error(self, ws, error):
         if not self.exited:
             self.error(error)

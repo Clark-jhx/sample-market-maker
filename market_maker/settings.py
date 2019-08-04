@@ -41,3 +41,5 @@ if symbolSettings:
 
 # Main export
 settings = dotdict(settings)
+
+# 该文件用于命令行执行marketmaker setup时，在当前目录下创建settings.py文件和market_maker目录

@@ -3,7 +3,7 @@ import os
 
 import shutil
 
-
+# __init__.py本身就是一个模块，而他的模块名就是它的包名
 __version__ = 'v1.5'
 
 
@@ -19,6 +19,7 @@ def run():
         # import market_maker here rather than at the top because it depends on settings.py existing
         try:
             from market_maker import market_maker
+            # marketmaker 命令的入口
             market_maker.run()
         except ImportError:
             print('Can\'t find settings.py. Run "marketmaker setup" to create project.')

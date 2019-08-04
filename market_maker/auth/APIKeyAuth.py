@@ -31,7 +31,7 @@ class APIKeyAuth(AuthBase):
 def generate_expires():
     return int(time.time() + 3600)
 
-
+# 构建api签名
 # Generates an API signature.
 # A signature is HMAC_SHA256(secret, verb + path + nonce + data), hex encoded.
 # Verb must be uppercased, url is relative, nonce must be an increasing 64-bit integer

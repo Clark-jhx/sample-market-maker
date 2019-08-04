@@ -17,6 +17,7 @@ class BitMEX(object):
 
     """BitMEX API Connector."""
 
+    # 参数对应settings.py配置文件中的值
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
                  orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False, timeout=7):
         """Init connector."""
@@ -33,7 +34,7 @@ class BitMEX(object):
         if len(orderIDPrefix) > 13:
             raise ValueError("settings.ORDERID_PREFIX must be at most 13 characters long!")
         self.orderIDPrefix = orderIDPrefix
-        self.retries = 0  # initialize counter
+        self.retries = 0  # initialize counter 计数器
 
         # Prepare HTTPS session
         self.session = requests.Session()
@@ -43,6 +44,7 @@ class BitMEX(object):
         self.session.headers.update({'accept': 'application/json'})
 
         # Create websocket for streaming data
+        # 创建websocket
         self.ws = BitMEXWebsocket()
         self.ws.connect(base_url, symbol, shouldAuth=shouldWSAuth)
 
@@ -73,6 +75,7 @@ class BitMEX(object):
             query['filter'] = json.dumps(filter)
         return self._curl_bitmex(path='instrument', query=query, verb='GET')
 
+    # 市场深度
     def market_depth(self, symbol):
         """Get market depth / orderbook."""
         return self.ws.market_depth(symbol)
@@ -104,11 +107,13 @@ class BitMEX(object):
                 return fn(self, *args, **kwargs)
         return wrapped
 
+    # 保证金
     @authentication_required
     def funds(self):
         """Get your current balance."""
         return self.ws.funds()
 
+    # 获取持有仓位
     @authentication_required
     def position(self, symbol):
         """Get your open position."""
@@ -161,12 +166,14 @@ class BitMEX(object):
         }
         return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
 
+    # 修改订单
     @authentication_required
     def amend_bulk_orders(self, orders):
         """Amend multiple orders."""
         # Note rethrow; if this fails, we want to catch it and re-tick
         return self._curl_bitmex(path='order/bulk', postdict={'orders': orders}, verb='PUT', rethrow_errors=True)
 
+    # 创建订单
     @authentication_required
     def create_bulk_orders(self, orders):
         """Create multiple orders."""
@@ -177,6 +184,7 @@ class BitMEX(object):
                 order['execInst'] = 'ParticipateDoNotInitiate'
         return self._curl_bitmex(path='order/bulk', postdict={'orders': orders}, verb='POST')
 
+    # 获取已存在的订单
     @authentication_required
     def open_orders(self):
         """Get open orders."""
@@ -217,6 +225,7 @@ class BitMEX(object):
         }
         return self._curl_bitmex(path=path, postdict=postdict, verb="POST", max_retries=0)
 
+    # http 请求发送订单
     def _curl_bitmex(self, path, query=None, postdict=None, timeout=None, verb=None, rethrow_errors=False,
                      max_retries=None):
         """Send a request to BitMEX Servers."""
