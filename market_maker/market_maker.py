@@ -851,7 +851,8 @@ class OrderManager:
         logger.info("Shutting down. All open orders will be cancelled.")
         try:
             # 取消所有订单
-            self.exchange.cancel_all_orders()
+            # self.exchange.cancel_all_orders() # 系统推出时，不取消未成交订单
+
             # 断开ws连接
             self.exchange.bitmex.exit()
         except errors.AuthenticationError as e:

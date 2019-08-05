@@ -38,15 +38,55 @@ class MineOrderManager(OrderManager):
         sell_orders = []
         if self.tag == '1':
             # 账户1下单
-            buy_orders.append({'ordType': 'Market', 'orderQty': 1, 'side': "Buy"})
+            buy_orders.append({'ordType': 'Market', 'orderQty': settings.ORDER__SIZE, 'side': "Buy"})
             self.exchange.create_bulk_orders(buy_orders)
             pass
         if self.tag == '2':
             # 账户2下单
-            sell_orders.append({'ordType': 'Market', 'orderQty': 1, 'side': "Sell"})
+            sell_orders.append({'ordType': 'Market', 'orderQty': settings.ORDER__SIZE, 'side': "Sell"})
             self.exchange.create_bulk_orders(sell_orders)
             pass
         pass
+
+    # 放置止损止盈单
+    def place_loss_win(self):
+        # 还未成交的挂单
+        existing_orders = self.exchange.get_orders()
+        if len(existing_orders) > 0:
+            # 存在未成交的订单，直接返回
+            return
+
+        buy_orders = []
+        sell_orders = []
+        # 当前持仓情况
+        position = self.exchange.get_position()
+        # 目前仓位数量 有正负
+        self.running_qty = position['currentQty']
+        # 开仓价格
+        avgEntryPrice = position['avgEntryPrice']
+        # 强平价格
+        marginCallPrice = position['marginCallPrice']
+        # 开仓价格 与 止盈价格 差距
+        if (avgEntryPrice is None) or (marginCallPrice is None):
+            return
+        diff = abs(avgEntryPrice - marginCallPrice)
+
+        if self.running_qty == 0:
+            # 仓位为0直接返回
+            return
+
+        if self.running_qty > 0:
+            # 多头止盈
+            price = avgEntryPrice + diff * 2
+            sell_orders.append({'price': price, 'orderQty': settings.ORDER__SIZE, 'side': "Sell"})
+            self.exchange.create_bulk_orders(sell_orders)
+            pass
+        if self.running_qty < 0:
+            # 空头止盈
+            price = avgEntryPrice - diff * 2
+            buy_orders.append({'price': price, 'orderQty': settings.ORDER__SIZE, 'side': "Buy"})
+            self.exchange.create_bulk_orders(buy_orders)
+            pass
 
 class MultiCustomOrderManager(MulOrderManager):
     """A sample order manager for implementing your own custom strategy"""
@@ -65,15 +105,15 @@ class MultiCustomOrderManager(MulOrderManager):
     # 覆写父类方法
     def strategy(self):
         # 仓位数量
-        print('xx strategy')
         currentQty_1 = self.order_manager_1.exchange.get_delta()
         currentQty_2 = self.order_manager_2.exchange.get_delta()
-        print(currentQty_1, currentQty_2)
         if currentQty_1 == 0 and currentQty_2 == 0:
             self.order_manager_1.place_orders()
             self.order_manager_2.place_orders()
         else:
-            # todo 挂止盈单
+            # 放置止损止盈单
+            self.order_manager_1.place_loss_win()
+            self.order_manager_2.place_loss_win()
             pass
 
 
