@@ -2,6 +2,12 @@ from os.path import join
 import logging
 
 ########################################################################################################################
+# leverage
+# 杠杆
+########################################################################################################################
+LEVERAGE = 90
+
+########################################################################################################################
 # Connection/Auth
 # 连接/授权
 ########################################################################################################################
@@ -14,12 +20,15 @@ BASE_URL = "https://testnet.bitmex.com/api/v1/" # 测试地址
 API_KEY = ""
 API_SECRET = ""
 
+# tag 用于标识账户
 API_SECRETS = [
     {
+        'tag': '1',
         'apiKey': '8niYvr0Xcxq-HqfFEiGBsISd',
         'apiSecret': '3oJVgWKHVSJhmgWb4PHk7Fqgt_CoyievVsRmv1I0tugzXUgN'
     },
     {
+        'tag': '2',
         'apiKey': 'whf-uOhZIbJNVA6eWMfe96XW',
         'apiSecret': 'OybtAXR7ImW5W8bbpv5wyENqMdl5TjPXmFlmXZ-NQr6bAARw'
     }
@@ -111,7 +120,10 @@ DRY_RUN = False
 # order amend/replaces are done, you may hit a ratelimit. If so, email BitMEX if you feel you need a higher limit.
 # 如果太多订单要修改/替换，可能会激活速率限制，向bitmex发邮件
 # 主循环时间价格，单位秒
-LOOP_INTERVAL = 5
+LOOP_INTERVAL = 30
+
+# 主循环开始之前sleep一段时间，以便多个websocket建立连接
+BEFORE_MAIN_LOOP = 60
 
 # Wait times between orders / errors
 # 出现错误等待时间

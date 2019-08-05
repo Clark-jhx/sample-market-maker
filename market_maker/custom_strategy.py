@@ -24,6 +24,8 @@ def run() -> None:
 
     # Try/except just keeps ctrl-c from printing an ugly stacktrace
     try:
+        # 在开始主循环之前sleep一段时间，以便多个websocket建立连接
+        sleep(settings.BEFORE_MAIN_LOOP)
         order_manager.run_loop()
     except (KeyboardInterrupt, SystemExit):
         sys.exit()

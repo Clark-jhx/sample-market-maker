@@ -119,6 +119,7 @@ class BitMEX(object):
         """Get your open position."""
         return self.ws.position(symbol)
 
+    # 设置杠杆
     @authentication_required
     def isolate_margin(self, symbol, leverage, rethrow_errors=False):
         """Set the leverage on an isolated margin position"""

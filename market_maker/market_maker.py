@@ -520,9 +520,17 @@ class ExchangeInterface:
             return orders
         return self.bitmex.cancel([order['orderID'] for order in orders])
 
+    # 设置杠杆
+    def isolate_margin(self, leverage, symbol=None):
+        if symbol is None:
+            symbol = self.symbol
+        self.bitmex.isolate_margin(symbol=symbol, leverage=leverage)
+
 
 class OrderManager:
-    def __init__(self, apiKey=None, apiSecret=None):
+    def __init__(self, tag=None, apiKey=None, apiSecret=None):
+        # 用于标记是哪个账户
+        self.tag = tag
         # 交易所接口
         self.exchange = ExchangeInterface(settings.DRY_RUN, apiKey=apiKey, apiSecret=apiSecret)
         # Once exchange is created, register exit handler that will always cancel orders
@@ -542,6 +550,7 @@ class OrderManager:
         self.instrument = self.exchange.get_instrument()
         self.starting_qty = self.exchange.get_delta()
         self.running_qty = self.starting_qty
+        # 首先会取消所有订单，打印状态
         self.reset()
 
     # reset
@@ -551,7 +560,7 @@ class OrderManager:
         self.print_status()  # 打印状态
 
         # Create orders and converge.
-        self.place_orders()
+        # self.place_orders() # 一开始不放置订单，策略中开单
 
     def print_status(self):
         """Print the current MM status."""
@@ -876,22 +885,30 @@ class OrderManager:
         logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
+
 class MulOrderManager:
     def __init__(self, key_secrets=None):
         self.key_secrets = key_secrets
-        self.order_managers = []
-        for key_secret in key_secrets:
-            order_manager = OrderManager(apiKey=key_secret['apiKey'], apiSecret=key_secret['apiSecret'])
-            self.order_managers.append(order_manager)
+        self.order_managers = {}
+        for key_secret in self.key_secrets:
+            order_manager = self.create_order_manager(tag=key_secret['tag'], apiKey=key_secret['apiKey'], apiSecret=key_secret['apiSecret'])
+            self.order_managers.update({key_secret['tag']: order_manager})
+        pass
+
+    # 子类创建自己的orderManager
+    def create_order_manager(self, tag=None, apiKey=None, apiSecret=None):
+        return OrderManager(tag=tag, apiKey=apiKey, apiSecret=apiSecret)
+
+    def strategy(self):
+        # 具体的多账户策略，子类实现
         pass
 
     def run_loop(self):
         while True:
             sys.stdout.write("-----\n")
             sys.stdout.flush()
-            
-            sleep(settings.LOOP_INTERVAL)
-            for order_manager in self.order_managers:
+
+            for tag, order_manager in self.order_managers.items():
                 # 检查文件改变，重启
                 order_manager.check_file_change()
                 # This will restart on very short downtime, but if it's longer,
@@ -903,7 +920,10 @@ class MulOrderManager:
 
                     order_manager.sanity_check()  # Ensures health of mm - several cut-out points here
                     order_manager.print_status()  # Print skew, delta, etc
-                    order_manager.place_orders()  # Creates desired orders and converges to existing orders
+            # 具体的策略下单逻辑
+            self.strategy()
+            sleep(settings.LOOP_INTERVAL)
+
 
 #
 # Helpers
