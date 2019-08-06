@@ -642,7 +642,8 @@ class OrderManager:
             if index < 0 and start_position > self.start_position_sell:
                 start_position = self.start_position_buy
 
-        return math.toNearest(start_position * (1 + settings.INTERVAL) ** index, self.instrument['tickSize'])  # INTERVAL 0.005，tickSize 最小变动价格0.5，toNearest 四舍五入
+        # INTERVAL 0.005，tickSize 最小变动价格0.5，toNearest 取最靠近0.5的值(比如100.6，最靠近100.5)
+        return math.toNearest(start_position * (1 + settings.INTERVAL) ** index, self.instrument['tickSize'])
 
     ###
     # Orders

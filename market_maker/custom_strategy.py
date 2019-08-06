@@ -3,6 +3,7 @@ from time import sleep
 from market_maker.settings import settings
 from market_maker.market_maker import OrderManager, XBt_to_XBT, logger
 from market_maker.market_maker import MulOrderManager
+from market_maker.utils import math
 
 
 class MineOrderManager(OrderManager):
@@ -77,13 +78,15 @@ class MineOrderManager(OrderManager):
 
         if self.running_qty > 0:
             # 多头止盈
-            price = avgEntryPrice + diff * 2
+            # tickSize 最小变动价格0.5，toNearest 取最靠近0.5的值(比如100.6，最靠近100.5)
+            price = math.toNearest((avgEntryPrice + diff * 2), self.instrument['tickSize'])
             sell_orders.append({'price': price, 'orderQty': settings.ORDER__SIZE, 'side': "Sell"})
             self.exchange.create_bulk_orders(sell_orders)
             pass
         if self.running_qty < 0:
             # 空头止盈
-            price = avgEntryPrice - diff * 2
+            # tickSize 最小变动价格0.5，toNearest 取最靠近0.5的值(比如100.6，最靠近100.5)
+            price = math.toNearest((avgEntryPrice - diff * 2), self.instrument['tickSize'])
             buy_orders.append({'price': price, 'orderQty': settings.ORDER__SIZE, 'side': "Buy"})
             self.exchange.create_bulk_orders(buy_orders)
             pass
