@@ -37,12 +37,12 @@ class MineOrderManager(OrderManager):
 
         buy_orders = []
         sell_orders = []
-        if self.tag == '1':
+        if self.tag == settings.API_SECRETS[0]['tag']:
             # 账户1下单
             buy_orders.append({'ordType': 'Market', 'orderQty': settings.ORDER__SIZE, 'side': "Buy"})
             self.exchange.create_bulk_orders(buy_orders)
             pass
-        if self.tag == '2':
+        if self.tag == settings.API_SECRETS[1]['tag']:
             # 账户2下单
             sell_orders.append({'ordType': 'Market', 'orderQty': settings.ORDER__SIZE, 'side': "Sell"})
             self.exchange.create_bulk_orders(sell_orders)
