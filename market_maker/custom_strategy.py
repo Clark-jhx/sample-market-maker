@@ -98,9 +98,9 @@ class MultiCustomOrderManager(MulOrderManager):
         # 先调用父类构造器，创建orderManager, 并传入秘钥
         super(MultiCustomOrderManager, self).__init__(key_secrets=key_secrets)
         # 账户1
-        self.order_manager_1 = self.order_managers['1']
+        self.order_manager_1 = self.order_managers[settings.API_SECRETS[0]['tag']]
         # 账户2
-        self.order_manager_2 = self.order_managers['2']
+        self.order_manager_2 = self.order_managers[settings.API_SECRETS[1]['tag']]
 
     def create_order_manager(self, tag=None, apiKey=None, apiSecret=None):
         return MineOrderManager(tag=tag, apiKey=apiKey, apiSecret=apiSecret)
