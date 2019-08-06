@@ -21,7 +21,7 @@ class BitMEX(object):
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
                  orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False, timeout=7):
         """Init connector."""
-        self.logger = logging.getLogger('root')
+        self.logger = logging.getLogger('BitMEX API')
         self.base_url = base_url
         self.symbol = symbol
         self.postOnly = postOnly

@@ -25,12 +25,12 @@ API_SECRET = ""
 # tag 用于标识账户
 API_SECRETS = [
     {
-        'tag': '1',
+        'tag': 'qq.mail',
         'apiKey': '8niYvr0Xcxq-HqfFEiGBsISd',
         'apiSecret': '3oJVgWKHVSJhmgWb4PHk7Fqgt_CoyievVsRmv1I0tugzXUgN'
     },
     {
-        'tag': '2',
+        'tag': 'gmail',
         'apiKey': 'whf-uOhZIbJNVA6eWMfe96XW',
         'apiSecret': 'OybtAXR7ImW5W8bbpv5wyENqMdl5TjPXmFlmXZ-NQr6bAARw'
     }

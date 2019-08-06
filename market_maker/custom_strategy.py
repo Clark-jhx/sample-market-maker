@@ -16,16 +16,16 @@ class MineOrderManager(OrderManager):
         tickLog = self.exchange.get_instrument()['tickLog']  # 合约价值(1usd)
         self.start_XBt = margin["marginBalance"]
 
-        logger.info("当前余额: %.6f" % XBt_to_XBT(self.start_XBt))  # 当前余额(小数点有6位)
-        logger.info("目前仓位数量: %d" % self.running_qty)  # 目前仓位数量
+        self.logger.info("当前余额: %.6f" % XBt_to_XBT(self.start_XBt))  # 当前余额(小数点有6位)
+        self.logger.info("目前仓位数量: %d" % self.running_qty)  # 目前仓位数量
         if settings.CHECK_POSITION_LIMITS:  # 仓位数量限制
-            logger.info("仓位数量限制: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
+            self.logger.info("仓位数量限制: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
         # 仓位情况
         if position['currentQty'] != 0:
-            logger.info("开仓价格: %.*f" % (tickLog, float(position['avgCostPrice'])))
-            logger.info("开仓价格: %.*f" % (tickLog, float(position['avgEntryPrice'])))
-        logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+            self.logger.info("开仓价格: %.*f" % (tickLog, float(position['avgCostPrice'])))
+            self.logger.info("开仓价格: %.*f" % (tickLog, float(position['avgEntryPrice'])))
+        self.logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
+        self.logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
 
     # 覆写父类方法
     def place_orders(self):

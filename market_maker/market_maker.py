@@ -7,6 +7,7 @@ import random
 import requests
 import atexit
 import signal
+import logging
 
 from market_maker import bitmex
 from market_maker.settings import settings
@@ -32,7 +33,7 @@ class ExchangeInterface:
             self.symbol = sys.argv[1]
         else:
             self.symbol = settings.SYMBOL
-
+        self.logger = logging.getLogger('exchange')
         # api接口
         self.bitmex = bitmex.BitMEX(base_url=settings.BASE_URL, symbol=self.symbol,
                                     apiKey=apiKey, apiSecret=apiSecret,
@@ -42,13 +43,13 @@ class ExchangeInterface:
     # 取消指定订单
     def cancel_order(self, order):
         tickLog = self.get_instrument()['tickLog']
-        logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
+        self.logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
         while True:
             try:
                 self.bitmex.cancel(order['orderID'])
                 sleep(settings.API_REST_INTERVAL)
             except ValueError as e:
-                logger.info(e)
+                self.logger.info(e)
                 sleep(settings.API_ERROR_INTERVAL)
             else:
                 break
@@ -58,7 +59,7 @@ class ExchangeInterface:
         if self.dry_run:
             return
 
-        logger.info("Resetting current position. Canceling all existing orders.")
+        self.logger.info("Resetting current position. Canceling all existing orders.")
         tickLog = self.get_instrument()['tickLog']
 
         # In certain cases, a WS update might not make it through before we call this.
@@ -67,7 +68,7 @@ class ExchangeInterface:
         orders = self.bitmex.http_open_orders()
 
         for order in orders:
-            logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
+            self.logger.info("Canceling: %s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
 
         if len(orders):
             # 取消指定id的订单
@@ -538,13 +539,14 @@ class OrderManager:
         # 注册系统退出(发生错误时)回调，会取消订单
         atexit.register(self.exit)
         signal.signal(signal.SIGTERM, self.exit)  # todo
+        self.logger = logging.getLogger(self.tag)
 
-        logger.info("Using symbol %s." % self.exchange.symbol)
+        self.logger.info("Using symbol %s." % self.exchange.symbol)
 
         if settings.DRY_RUN:
-            logger.info("Initializing dry run. Orders printed below represent what would be posted to BitMEX.")
+            self.logger.info("Initializing dry run. Orders printed below represent what would be posted to BitMEX.")
         else:
-            logger.info("Order Manager initializing, connecting to BitMEX. Live run: executing real trades.")
+            self.logger.info("Order Manager initializing, connecting to BitMEX. Live run: executing real trades.")
 
         self.start_time = datetime.now()
         self.instrument = self.exchange.get_instrument()
@@ -571,16 +573,16 @@ class OrderManager:
         tickLog = self.exchange.get_instrument()['tickLog']  # 合约价值(1usd)
         self.start_XBt = margin["marginBalance"]
 
-        logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))  # 当前余额(小数点有6位)
-        logger.info("Current Contract Position: %d" % self.running_qty)  # 目前仓位数量
+        self.logger.info("Current XBT Balance: %.6f" % XBt_to_XBT(self.start_XBt))  # 当前余额(小数点有6位)
+        self.logger.info("Current Contract Position: %d" % self.running_qty)  # 目前仓位数量
         if settings.CHECK_POSITION_LIMITS:  # 仓位数量限制
-            logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
+            self.logger.info("Position limits: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
         # 仓位情况
         if position['currentQty'] != 0:
-            logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
-            logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
-        logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
+            self.logger.info("Avg Cost Price: %.*f" % (tickLog, float(position['avgCostPrice'])))
+            self.logger.info("Avg Entry Price: %.*f" % (tickLog, float(position['avgEntryPrice'])))
+        self.logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
+        self.logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
 
     def get_ticker(self):
         '''返回策略的开仓价格，最高买价，最低卖价'''
@@ -612,11 +614,11 @@ class OrderManager:
         # Midpoint, used for simpler order placement.
         self.start_position_mid = ticker["mid"]
         # log信息
-        logger.info(
+        self.logger.info(
             "%s Ticker: Buy: %.*f, Sell: %.*f" %
             (self.instrument['symbol'], tickLog, ticker["buy"], tickLog, ticker["sell"])
         )
-        logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
+        self.logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
                     (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
                      tickLog, self.start_position_mid))
         return ticker
@@ -737,7 +739,7 @@ class OrderManager:
             # 打印修改订单信息
             for amended_order in reversed(to_amend):
                 reference_order = [o for o in existing_orders if o['orderID'] == amended_order['orderID']][0]
-                logger.info("Amending %4s: %d @ %.*f to %d @ %.*f (%+.*f)" % (amended_order['side'],
+                self.logger.info("Amending %4s: %d @ %.*f to %d @ %.*f (%+.*f)" % (amended_order['side'],
                     reference_order['leavesQty'], tickLog, reference_order['price'],
                     (amended_order['orderQty'] - reference_order['cumQty']), tickLog, amended_order['price'],
                     tickLog, (amended_order['price'] - reference_order['price'])
@@ -752,25 +754,25 @@ class OrderManager:
             except requests.exceptions.HTTPError as e:
                 errorObj = e.response.json()
                 if errorObj['error']['message'] == 'Invalid ordStatus':
-                    logger.warn("Amending failed. Waiting for order data to converge and retrying.")
+                    self.logger.warn("Amending failed. Waiting for order data to converge and retrying.")
                     sleep(0.5)
                     return self.place_orders()
                 else:
-                    logger.error("Unknown error on amend: %s. Exiting" % errorObj)
+                    self.logger.error("Unknown error on amend: %s. Exiting" % errorObj)
                     sys.exit(1)
 
         if len(to_create) > 0:
-            logger.info("Creating %d orders:" % (len(to_create)))
+            self.logger.info("Creating %d orders:" % (len(to_create)))
             for order in reversed(to_create):
-                logger.info("%4s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
+                self.logger.info("%4s %d @ %.*f" % (order['side'], order['orderQty'], tickLog, order['price']))
             # 创建订单，发送请求
             self.exchange.create_bulk_orders(to_create)
 
         # Could happen if we exceed a delta limit
         if len(to_cancel) > 0:
-            logger.info("Canceling %d orders:" % (len(to_cancel)))
+            self.logger.info("Canceling %d orders:" % (len(to_cancel)))
             for order in reversed(to_cancel):
-                logger.info("%4s %d @ %.*f" % (order['side'], order['leavesQty'], tickLog, order['price']))
+                self.logger.info("%4s %d @ %.*f" % (order['side'], order['leavesQty'], tickLog, order['price']))
             # 取消订单，发送请求
             self.exchange.cancel_bulk_orders(to_cancel)
 
@@ -816,21 +818,21 @@ class OrderManager:
 
         # Sanity check:
         if self.get_price_offset(-1) >= ticker["sell"] or self.get_price_offset(1) <= ticker["buy"]:
-            logger.error("Buy: %s, Sell: %s" % (self.start_position_buy, self.start_position_sell))
-            logger.error("First buy position: %s\nBitMEX Best Ask: %s\nFirst sell position: %s\nBitMEX Best Bid: %s" %
+            self.logger.error("Buy: %s, Sell: %s" % (self.start_position_buy, self.start_position_sell))
+            self.logger.error("First buy position: %s\nBitMEX Best Ask: %s\nFirst sell position: %s\nBitMEX Best Bid: %s" %
                          (self.get_price_offset(-1), ticker["sell"], self.get_price_offset(1), ticker["buy"]))
-            logger.error("Sanity check failed, exchange data is inconsistent")
+            self.logger.error("Sanity check failed, exchange data is inconsistent")
             self.exit()
 
         # Messaging if the position limits are reached
         if self.long_position_limit_exceeded():
-            logger.info("Long delta limit exceeded")
-            logger.info("Current Position: %.f, Maximum Position: %.f" %
+            self.logger.info("Long delta limit exceeded")
+            self.logger.info("Current Position: %.f, Maximum Position: %.f" %
                         (self.exchange.get_delta(), settings.MAX_POSITION))
 
         if self.short_position_limit_exceeded():
-            logger.info("Short delta limit exceeded")
-            logger.info("Current Position: %.f, Minimum Position: %.f" %
+            self.logger.info("Short delta limit exceeded")
+            self.logger.info("Current Position: %.f, Minimum Position: %.f" %
                         (self.exchange.get_delta(), settings.MIN_POSITION))
 
     ###
@@ -849,7 +851,7 @@ class OrderManager:
 
     # 退出
     def exit(self):
-        logger.info("Shutting down. All open orders will be cancelled.")
+        self.logger.info("Shutting down. All open orders will be cancelled.")
         try:
             # 取消所有订单
             # self.exchange.cancel_all_orders() # 系统推出时，不取消未成交订单
@@ -857,9 +859,9 @@ class OrderManager:
             # 断开ws连接
             self.exchange.bitmex.exit()
         except errors.AuthenticationError as e:
-            logger.info("Was not authenticated; could not cancel orders.")
+            self.logger.info("Was not authenticated; could not cancel orders.")
         except Exception as e:
-            logger.info("Unable to cancel orders: %s" % e)
+            self.logger.info("Unable to cancel orders: %s" % e)
 
         sys.exit()
 
@@ -876,7 +878,7 @@ class OrderManager:
             # the MM will crash entirely as it is unable to connect to the WS on boot.
             # 如果ws断开连接，重连
             if not self.check_connection():
-                logger.error("Realtime data connection unexpectedly closed, restarting.")
+                self.logger.error("Realtime data connection unexpectedly closed, restarting.")
                 self.restart()
 
             self.sanity_check()  # Ensures health of mm - several cut-out points here
@@ -884,7 +886,7 @@ class OrderManager:
             self.place_orders()  # Creates desired orders and converges to existing orders
 
     def restart(self):
-        logger.info("Restarting the market maker...")
+        self.logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
@@ -920,8 +922,8 @@ class MulOrderManager:
                     logger.error("Realtime data connection unexpectedly closed, restarting.")
                     order_manager.restart()
 
-                    order_manager.sanity_check()  # Ensures health of mm - several cut-out points here
-                    order_manager.print_status()  # Print skew, delta, etc
+                order_manager.sanity_check()  # Ensures health of mm - several cut-out points here
+                order_manager.print_status()  # Print skew, delta, etc
             # 具体的策略下单逻辑
             self.strategy()
             sleep(settings.LOOP_INTERVAL)

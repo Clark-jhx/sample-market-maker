@@ -33,7 +33,7 @@ class BitMEXWebsocket():
     def __init__(self, apiKey=None, apiSecret=None):
         self.apiKey = apiKey
         self.apiSecret = apiSecret
-        self.logger = logging.getLogger('root')
+        self.logger = logging.getLogger('Websocket')
         self.__reset()
 
     def __del__(self):
