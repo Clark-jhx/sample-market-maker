@@ -26,7 +26,7 @@ class MineOrderManager(OrderManager):
             self.logger.info("开仓价格: %.*f" % (tickLog, float(position['avgEntryPrice'])))
         self.logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
         self.logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
-        self.logger.info('  ')
+        sys.stdout.write("    \n")
 
     # 覆写父类方法
     def place_orders(self):
