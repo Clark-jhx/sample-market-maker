@@ -7,6 +7,7 @@ from time import sleep
 import json
 import decimal
 import logging
+from market_maker.utils import log
 from market_maker.settings import settings
 from market_maker.auth.APIKeyAuth import generate_expires, generate_signature
 from market_maker.utils.log import setup_custom_logger
@@ -33,7 +34,7 @@ class BitMEXWebsocket():
     def __init__(self, apiKey=None, apiSecret=None):
         self.apiKey = apiKey
         self.apiSecret = apiSecret
-        self.logger = logging.getLogger('Websocket')
+        self.logger = log.setup_custom_logger('Websocket', logging.INFO)
         self.__reset()
 
     def __del__(self):

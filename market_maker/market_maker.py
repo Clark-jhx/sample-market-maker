@@ -33,7 +33,7 @@ class ExchangeInterface:
             self.symbol = sys.argv[1]
         else:
             self.symbol = settings.SYMBOL
-        self.logger = logging.getLogger('exchange')
+        self.logger = log.setup_custom_logger('exchange', logging.INFO)
         # api接口
         self.bitmex = bitmex.BitMEX(base_url=settings.BASE_URL, symbol=self.symbol,
                                     apiKey=apiKey, apiSecret=apiSecret,
@@ -539,7 +539,7 @@ class OrderManager:
         # 注册系统退出(发生错误时)回调，会取消订单
         atexit.register(self.exit)
         signal.signal(signal.SIGTERM, self.exit)  # todo
-        self.logger = logging.getLogger(self.tag)
+        self.logger = log.setup_custom_logger(self.tag, logging.INFO)
 
         self.logger.info("Using symbol %s." % self.exchange.symbol)
 

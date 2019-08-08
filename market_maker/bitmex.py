@@ -7,6 +7,7 @@ import json
 import base64
 import uuid
 import logging
+from market_maker.utils import log
 from market_maker.auth import APIKeyAuthWithExpires
 from market_maker.utils import constants, errors
 from market_maker.ws.ws_thread import BitMEXWebsocket
@@ -21,7 +22,7 @@ class BitMEX(object):
     def __init__(self, base_url=None, symbol=None, apiKey=None, apiSecret=None,
                  orderIDPrefix='mm_bitmex_', shouldWSAuth=True, postOnly=False, timeout=7):
         """Init connector."""
-        self.logger = logging.getLogger('BitMEX API')
+        self.logger = log.setup_custom_logger('BitMEX API', logging.INFO)
         self.base_url = base_url
         self.symbol = symbol
         self.postOnly = postOnly
