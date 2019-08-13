@@ -122,7 +122,7 @@ DRY_RUN = False
 # order amend/replaces are done, you may hit a ratelimit. If so, email BitMEX if you feel you need a higher limit.
 # 如果太多订单要修改/替换，可能会激活速率限制，向bitmex发邮件
 # 主循环时间价格，单位秒
-LOOP_INTERVAL = 10
+LOOP_INTERVAL = 30
 
 # 主循环开始之前sleep一段时间，以便多个websocket建立连接
 BEFORE_MAIN_LOOP = 60

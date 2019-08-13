@@ -18,14 +18,9 @@ class MineOrderManager(OrderManager):
 
         self.logger.info("当前余额: %.6f" % XBt_to_XBT(self.start_XBt))  # 当前余额(小数点有6位)
         self.logger.info("目前仓位数量: %d" % self.running_qty)  # 目前仓位数量
-        if settings.CHECK_POSITION_LIMITS:  # 仓位数量限制
-            self.logger.info("仓位数量限制: %d/%d" % (settings.MIN_POSITION, settings.MAX_POSITION))
         # 仓位情况
         if position['currentQty'] != 0:
-            self.logger.info("开仓价格: %.*f" % (tickLog, float(position['avgCostPrice'])))
             self.logger.info("开仓价格: %.*f" % (tickLog, float(position['avgEntryPrice'])))
-        self.logger.info("Contracts Traded This Run: %d" % (self.running_qty - self.starting_qty))
-        self.logger.info("Total Contract Delta: %.4f XBT" % self.exchange.calc_delta()['spot'])
         sys.stdout.write("    \n")
 
     # 覆写父类方法
@@ -102,6 +97,9 @@ class MultiCustomOrderManager(MulOrderManager):
         self.order_manager_1 = self.order_managers[settings.API_SECRETS[0]['tag']]
         # 账户2
         self.order_manager_2 = self.order_managers[settings.API_SECRETS[1]['tag']]
+        # 两个账户开始保证金余额
+        self.start_margin_balance = self.order_manager_1.exchange.get_margin()["marginBalance"] + self.order_manager_2.exchange.get_margin()["marginBalance"]
+        self.logger.info('开始保证金余额：{}聪, {:.6f}XBT'.format(self.start_margin_balance, XBt_to_XBT(self.start_margin_balance)))
 
     def create_order_manager(self, tag=None, apiKey=None, apiSecret=None):
         return MineOrderManager(tag=tag, apiKey=apiKey, apiSecret=apiSecret)
@@ -119,6 +117,14 @@ class MultiCustomOrderManager(MulOrderManager):
             self.order_manager_1.place_loss_win()
             self.order_manager_2.place_loss_win()
             pass
+        # 打印连个账户总的一些状态
+        self.print_status()
+    def print_status(self):
+        current_margin_balance = self.order_manager_1.exchange.get_margin()["marginBalance"] + self.order_manager_2.exchange.get_margin()["marginBalance"]
+        gain = current_margin_balance - self.start_margin_balance
+        gain_xbt = XBt_to_XBT(gain)
+        self.logger.info('盈利：{}聪, {:.6f}XBT'.format(gain, gain_xbt))
+        pass
 
 
 def run() -> None:

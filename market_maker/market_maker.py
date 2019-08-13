@@ -892,6 +892,7 @@ class OrderManager:
 
 class MulOrderManager:
     def __init__(self, key_secrets=None):
+        self.logger = log.setup_custom_logger('multi-manager', logging.INFO)
         self.key_secrets = key_secrets
         self.order_managers = {}
         for key_secret in self.key_secrets:
