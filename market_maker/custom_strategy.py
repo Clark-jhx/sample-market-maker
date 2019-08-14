@@ -45,7 +45,7 @@ class MineOrderManager(OrderManager):
             pass
         pass
 
-    # 放置止损止盈单
+    # 放置止盈单
     def place_loss_win(self):
         # 还未成交的挂单
         existing_orders = self.exchange.get_orders()
@@ -69,7 +69,8 @@ class MineOrderManager(OrderManager):
         diff = abs(avgEntryPrice - marginCallPrice)
 
         if self.running_qty == 0:
-            # 仓位为0直接返回
+            # 仓位为0, 取消止盈挂单
+            self.exchange.cancel_all_orders()
             return
 
         if self.running_qty > 0:
@@ -109,6 +110,7 @@ class MultiCustomOrderManager(MulOrderManager):
         # 仓位数量
         currentQty_1 = self.order_manager_1.exchange.get_delta()
         currentQty_2 = self.order_manager_2.exchange.get_delta()
+        # 仓位同时为0, 则开始一个循环(同时开仓)
         if currentQty_1 == 0 and currentQty_2 == 0:
             self.order_manager_1.place_orders()
             self.order_manager_2.place_orders()
