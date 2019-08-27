@@ -618,9 +618,9 @@ class OrderManager:
             "%s Ticker: Buy: %.*f, Sell: %.*f" %
             (self.instrument['symbol'], tickLog, ticker["buy"], tickLog, ticker["sell"])
         )
-        self.logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
-                    (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
-                     tickLog, self.start_position_mid))
+        #self.logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
+        #           (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
+        #            tickLog, self.start_position_mid))
         return ticker
 
     def get_price_offset(self, index):
